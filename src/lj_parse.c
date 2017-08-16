@@ -2099,6 +2099,8 @@ static void expr_unop(LexState *ls, ExpDesc *v)
   BCOp op;
   if (ls->token == TK_not) {
     op = BC_NOT;
+  } else if (ls->token == '!') {
+    op = BC_NOT;
   } else if (ls->token == '-') {
     op = BC_UNM;
   } else if (ls->token == '#') {

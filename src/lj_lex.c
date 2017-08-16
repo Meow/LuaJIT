@@ -138,7 +138,7 @@ static int skip_sep(LexState *ls)
 {
   int count = 0;
   int s = ls->current;
-  lua_assert(s == '[' || s == ']');
+  lua_assert(s == '[' || s == ']' || s == '*');
   save_and_next(ls);
   while (ls->current == '=') {
     save_and_next(ls);
@@ -157,10 +157,16 @@ static void read_long_string(LexState *ls, TValue *tv, int sep)
     case END_OF_STREAM:
       lj_lex_error(ls, TK_eof, tv ? LJ_ERR_XLSTR : LJ_ERR_XLCOM);
       break;
+    case '*':
+      next(ls);
+      save_and_next(ls);
+      goto endloop;
+
+      break;
     case ']':
       if (skip_sep(ls) == sep) {
-	save_and_next(ls);  /* skip 2nd `]' */
-	goto endloop;
+	      save_and_next(ls);  /* skip 2nd `]' */
+	      goto endloop;
       }
       break;
     case '\n':
@@ -288,6 +294,24 @@ static int llex(LexState *ls, TValue *tv)
     case '\f':
       next(ls);
       continue;
+    case '/': // C style comments
+      next(ls);
+      if (ls->current != '/' && ls->current != '*') return '/';
+
+      if (ls->current == '*') {
+        int sep = 0;
+
+        if (sep >= 0) {
+          read_long_string(ls, NULL, sep);  /* long comment */
+          lj_str_resetbuf(&ls->sb);
+          continue;
+        }
+      }
+
+      while (!currIsNewline(ls) && ls->current != END_OF_STREAM)
+        next(ls);
+
+      continue;
     case '-':
       next(ls);
       if (ls->current != '-') return '-';
@@ -330,6 +354,9 @@ static int llex(LexState *ls, TValue *tv)
     case '~':
       next(ls);
       if (ls->current != '=') return '~'; else { next(ls); return TK_ne; }
+    case '!':
+      next(ls);
+      if (ls->current != '=') return '!'; else { next(ls); return TK_ne; }
     case ':':
       next(ls);
       if (ls->current != ':') return ':'; else { next(ls); return TK_label; }
