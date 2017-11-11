@@ -360,6 +360,26 @@ static int llex(LexState *ls, TValue *tv)
     case ':':
       next(ls);
       if (ls->current != ':') return ':'; else { next(ls); return TK_label; }
+	case '&':
+		next(ls);
+
+		if (ls->current != '&')
+			return '&';
+		else {
+			next(ls);
+
+			return TK_and;
+		}
+	case '|':
+		next(ls);
+
+		if (ls->current != '|')
+			return '|';
+		else {
+			next(ls);
+
+			return TK_or;
+		}
     case '"':
     case '\'':
       read_string(ls, ls->current, tv);
